@@ -19,10 +19,110 @@ import (
 	"github.com/mmcloughlin/geohash"
 )
 
-type Cache map[string][]Weather
+const (
+	DefaultSize = 3
+)
 
+//Cache is a glaobal variable keeps a short list of query resualts in memory
+type Cache map[string]*Node
+
+//Node is a cache node
+type Node struct {
+	key  string
+	val  []Weather
+	next *Node
+	prev *Node
+}
+
+var head *Node
+var tail *Node
+var csize int
+
+func (c Cache) evict() *Node {
+
+	item := head.next
+	delete(c, item.key)
+	c.pop(item)
+	return item
+}
+
+func (c Cache) pop(item *Node) {
+	item.next.prev = item.prev
+	item.prev.next = item.next
+}
+
+func (c Cache) push(item *Node) {
+	tail.prev.next = item
+	item.prev = tail.prev
+	tail.prev = item
+	item.next = tail
+}
+
+func init() {
+	head = new(Node)
+	tail = new(Node)
+	head.next = tail
+	tail.prev = head
+	csize = DefaultSize
+}
+
+//Set puts certain value in the cache or update if it already exists
+func (c Cache) Set(key string, val []Weather) {
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	item := c[key]
+	if item == nil {
+		if len(c) == csize {
+			item = c.evict()
+		} else {
+			item = new(Node)
+		}
+		item.key = key
+		item.val = val
+		c.push(item)
+		c[key] = item
+	} else {
+		item.val = val
+		if tail.prev != item {
+			c.pop(item)
+			c.push(item)
+		}
+	}
+}
+
+//Get returns cache element and updates the cache in terms of this query
+func (c Cache) Get(key string) ([]Weather, bool) {
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	item, ok := c[key]
+	if !ok {
+		return nil, false
+	}
+	if tail.prev != item {
+		c.pop(item)
+		c.push(item)
+	}
+	return item.val, true
+}
+
+//Range iterates all key values using provided function in order of LRU
+func (c Cache) Range(f func(key interface{}, value interface{}) bool) {
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	if item := tail; item != nil {
+		item = tail.prev
+		for item != head {
+			if !f(item.key, item.val) {
+				return
+			}
+			item = item.prev
+		}
+	}
+}
+
+//CacheUpdater updates cache : keeps cache in appropriate size
 func (c Cache) CacheUpdater(updates <-chan struct{}) {
-
+	//This method haven't implemented , Used another level of cache
 	for {
 		select {
 		case <-updates:
@@ -32,8 +132,10 @@ func (c Cache) CacheUpdater(updates <-chan struct{}) {
 
 }
 
+//Sessions keeps track of current user's query reuslts in the cache
 type Sessions map[string]string
 
+//NewSessions initiates a global Sessions variable
 func NewSessions() *Sessions {
 	s := make(map[string]string)
 	k := Sessions(s)
@@ -71,7 +173,7 @@ func (s Sessions) UpdateSession(value string) {
 	s[value] = value
 }
 func NewCache() *Cache {
-	c := make(map[string][]Weather)
+	c := make(map[string]*Node)
 	k := Cache(c)
 	return &k
 }
@@ -88,6 +190,8 @@ var (
 	sessions = NewSessions()
 
 	sessionRWMutex sync.RWMutex
+
+	cacheMutex sync.Mutex
 
 	updater chan struct{}
 )
@@ -145,7 +249,7 @@ func main() {
 	s := &Service{db: db}
 
 	templates = template.Must(template.ParseGlob("../resources/static/*.html"))
-
+	updater = make(chan struct{}, DefaultSize)
 	go cache.CacheUpdater(updater)
 
 	r := mux.NewRouter()
@@ -178,7 +282,7 @@ func validateSession(req *http.Request) (string, bool) {
 func (c Cache) handleAirTemperatureAnnually(w http.ResponseWriter, req *http.Request) {
 
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid)
 		annuals := processAirTemp(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -190,7 +294,7 @@ func (c Cache) handleAirTemperatureAnnually(w http.ResponseWriter, req *http.Req
 }
 func (c Cache) handleDewTemperatureAnnually(w http.ResponseWriter, req *http.Request) {
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid)
 		annuals := processDewTemp(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -203,7 +307,7 @@ func (c Cache) handleDewTemperatureAnnually(w http.ResponseWriter, req *http.Req
 }
 func (c Cache) handleWindSpeedAnnually(w http.ResponseWriter, req *http.Request) {
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid)
 		annuals := processWindSpeed(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -216,7 +320,7 @@ func (c Cache) handleWindSpeedAnnually(w http.ResponseWriter, req *http.Request)
 }
 func (c Cache) handleCloudHeightAnnually(w http.ResponseWriter, req *http.Request) {
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid)
 		annuals := processCloudHeight(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -230,7 +334,7 @@ func (c Cache) handleCloudHeightAnnually(w http.ResponseWriter, req *http.Reques
 
 func (c Cache) handleAirPressureAnnually(w http.ResponseWriter, req *http.Request) {
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid)
 		annuals := processAirPressure(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -244,7 +348,7 @@ func (c Cache) handleAirPressureAnnually(w http.ResponseWriter, req *http.Reques
 
 func (c Cache) handleVisibilityAnnually(w http.ResponseWriter, req *http.Request) {
 	if stationid, ok := validateSession(req); ok {
-		ws := c[stationid]
+		ws, _ := c.Get(stationid) //session valid , ok to ignore
 		annuals := processVisibility(ws, 4)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -274,7 +378,14 @@ func (s *Service) handleIndexPost(w http.ResponseWriter, req *http.Request) {
 		cookie := http.Cookie{Name: "s3cr3t", Value: token, Expires: time.Now().AddDate(0, 0, 1)}
 		http.SetCookie(w, &cookie)
 		ws := s.getWeatherAnnual(st.Id, "") //retirve all year climate
-		(*cache)[st.Id] = ws                //store in cache for subsequent requests
+
+		cache.Set(st.Id, ws) //store in cache for subsequent requests
+		cache.Range(func(key interface{}, val interface{}) bool {
+			if k, ok := key.(string); ok {
+				fmt.Printf("%s : %T \n", k, val)
+			}
+			return true
+		})
 		if updater != nil {
 			fmt.Println("message sent to cache updater !")
 			updater <- struct{}{}
