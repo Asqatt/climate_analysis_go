@@ -173,7 +173,7 @@
 				var orimaxs = [];
 				var orimins = [];
 				var oriaverages = [];
-				$.getJSON('visibilityYear',function(data){
+				$.getJSON('airTemperatureYear',function(data){
 					getAirTemperature(data);
 					$.each(data, function(index, item){
 						oridates.push(item.category);
@@ -208,7 +208,7 @@
 					var maxs = [];
 					var mins = [];
 					var averages = [];
-					$.getJSON('/visibilityYear',function(data){
+					$.getJSON('/airTemeratureYear',function(data){
 						getAirTemperature(data);
 						$.each(data, function(index, item){
 							dates.push(item.category);
@@ -243,7 +243,7 @@
 					var maxs = [];
 					var mins = [];
 					var averages = [];
-					$.getJSON('-------------------------',function(data){
+					$.getJSON('/dewTemperatureYear',function(data){
 						getDewTemperature(data);
 						$.each(data, function(index, item){
 							dates.push(item.category);
@@ -278,7 +278,7 @@
 					var maxs = [];
 					var mins = [];
 					var averages = [];
-					$.getJSON('-------------------------',function(data){
+					$.getJSON('/windSpeedYear',function(data){
 						getWind(data);
 						$.each(data, function(index, item){
 							dates.push(item.category);
@@ -313,7 +313,7 @@
 					var maxs = [];
 					var mins = [];
 					var averages = [];
-					$.getJSON('-------------------------',function(data){
+					$.getJSON('/cloudHeightYear',function(data){
 						getCloudHeight(data);
 						$.each(data, function(index, item){
 							dates.push(item.category);
@@ -351,10 +351,10 @@
 					$.getJSON('/airPressureYear',function(data){
 						getAirPressure(data);
 						$.each(data, function(index, item){
-							dates.push(item.date);
-							maxs.push(item.maxairpressure);
-							mins.push(item.minairpressure);
-							averages.push(item.avgairpressure);
+							dates.push(item.category);
+							maxs.push(item.max);
+							mins.push(item.min);
+							averages.push(item.average);
 						});
 						myChart.setOption({
 							xAxis : {
@@ -386,10 +386,10 @@
 					$.getJSON('/visibilityYear',function(data){
 						getVisibility(data);
 						$.each(data, function(index, item){
-							dates.push(item.date);
-							maxs.push(item.maxvisibility);
-							mins.push(item.minvisibility);
-							averages.push(item.avgvisibility);
+							dates.push(item.category);
+							maxs.push(item.max);
+							mins.push(item.min);
+							averages.push(item.average);
 						});
 						myChart.setOption({
 							xAxis : {
@@ -644,7 +644,7 @@
 						var maxs = [];
 						var mins = [];
 						var averages = [];
-					    $.getJSON('./monthTemperature.json', function(data){
+					    $.getJSON('json/monthTemperature.json', function(data){
 					    	getAirTemperature(data);
 							$.each(data, function(index, item){
 								dates.push(item.category);
@@ -2067,7 +2067,7 @@
 										var maxs = [];
 										var mins = [];
 										var averages = [];
-									    $.getJSON('/visibilityYear', function(data){
+									    $.getJSON('visibilityYear', function(data){
 									    	getVisibility(data);
 											$.each(data, function(index, item){
 												dates.push(item.date);
