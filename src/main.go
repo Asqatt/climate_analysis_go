@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	conv "strconv"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ import (
 )
 
 const (
-	DefaultSize = 3
+	DefaultSize = 15
 )
 
 //Cache is a glaobal variable keeps a short list of query resualts in memory
@@ -32,6 +33,20 @@ type Node struct {
 	val  []Weather
 	next *Node
 	prev *Node
+}
+
+type ItemSlice []Item
+
+func (w ItemSlice) Len() int { fmt.Println("worked in sorting"); return len(w) }
+func (w ItemSlice) Less(i, j int) bool {
+	a, _ := conv.Atoi(w[i].Category[:4])
+	b, _ := conv.Atoi(w[j].Category[:4])
+	return a < b
+}
+func (w ItemSlice) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
+
+func sortItem(w []Item) {
+	sort.Sort(ItemSlice(w))
 }
 
 var head *Node
@@ -430,7 +445,7 @@ func processWindSpeed(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
-
+	sortItem(annuals)
 	return annuals
 }
 func processCloudHeight(whole []Weather, trimer int) []Item {
@@ -457,7 +472,7 @@ func processCloudHeight(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
-
+	sortItem(annuals)
 	return annuals
 }
 func processVisibility(whole []Weather, trimer int) []Item {
@@ -484,7 +499,7 @@ func processVisibility(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
-
+	sortItem(annuals)
 	return annuals
 }
 
@@ -512,7 +527,7 @@ func processAirPressure(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
-
+	sortItem(annuals)
 	return annuals
 }
 
@@ -541,6 +556,7 @@ func processAirTemp(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
+	sortItem(annuals)
 	return annuals
 }
 func processDewTemp(whole []Weather, trimer int) []Item {
@@ -567,6 +583,7 @@ func processDewTemp(whole []Weather, trimer int) []Item {
 		sum = 0.0
 		annuals = append(annuals, temp)
 	}
+	sortItem(annuals)
 	return annuals
 }
 
@@ -596,6 +613,12 @@ func (s *Service) getWeatherAnnual(id, year string) []Weather {
 			&weather.maxairtemperature, &weather.minairtemperature, &weather.avgairtemperature,
 			&weather.maxdewtemperature, &weather.mindewtemperature, &weather.avgdewtemperature,
 			&weather.maxairpressure, &weather.minairpressure, &weather.avgairpressure)
+
+		weather.maxairtemperature, weather.minairtemperature, weather.avgairtemperature,
+			weather.maxdewtemperature, weather.mindewtemperature, weather.avgdewtemperature =
+			weather.maxairtemperature/10, weather.minairtemperature/10, weather.avgairtemperature/10,
+			weather.maxdewtemperature/10, weather.mindewtemperature/10, weather.avgdewtemperature/10
+
 		weathers = append(weathers, weather)
 	}
 	if err != nil {
