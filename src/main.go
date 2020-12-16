@@ -272,7 +272,7 @@ func main() {
 	r.HandleFunc("/airTemperatureYear", cache.handleAirTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/dewTemperatureYear", cache.handleDewTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/windSpeedYear", cache.handleDewTemperatureAnnually).Methods("GET")
-	r.HandleFunc("/cloudHeightYear", cache.handleDewTemperatureAnnually).Methods("GET")
+	r.HandleFunc("/cloudHeightYear", cache.handleCloudHeightAnnually).Methods("GET")
 	r.HandleFunc("/airPressureYear", cache.handleAirPressureAnnually).Methods("GET")
 	r.HandleFunc("/visibilityYear", cache.handleVisibilityAnnually).Methods("GET")
 	r.HandleFunc("/stationsearch", s.handleIndexPost).Methods("POST")
