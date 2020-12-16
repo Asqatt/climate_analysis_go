@@ -268,7 +268,8 @@ func main() {
 	go cache.CacheUpdater(updater)
 
 	r := mux.NewRouter()
-	r.Handle("/", http.HandlerFunc(handleIndexGet)).Methods("GET")
+	r.Handle("/", http.HandlerFunc(handleMeGet)).Methods("GET")
+	r.Handle("/index", http.HandlerFunc(handleIndexGet)).Methods("GET")
 	r.HandleFunc("/airTemperatureYear", cache.handleAirTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/dewTemperatureYear", cache.handleDewTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/windSpeedYear", cache.handleDewTemperatureAnnually).Methods("GET")
@@ -277,7 +278,7 @@ func main() {
 	r.HandleFunc("/visibilityYear", cache.handleVisibilityAnnually).Methods("GET")
 	r.HandleFunc("/stationsearch", s.handleIndexPost).Methods("POST")
 	fs := http.FileServer(http.Dir("../resources/static/")) //file server
-	r.PathPrefix("/{js|css|json|img}/").Handler(http.StripPrefix("", fs))
+	r.PathPrefix("/{js|css|json|fonts|img}/").Handler(http.StripPrefix("", fs))
 	log.Fatal(http.ListenAndServe(":8080", r))
 
 }
@@ -374,7 +375,9 @@ func (c Cache) handleVisibilityAnnually(w http.ResponseWriter, req *http.Request
 	}
 
 }
-
+func handleMeGet(w http.ResponseWriter, req *http.Request) {
+	templates.ExecuteTemplate(w, "me.html", nil)
+}
 func handleIndexGet(w http.ResponseWriter, req *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", nil)
 }
