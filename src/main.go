@@ -37,7 +37,7 @@ type Node struct {
 
 type ItemSlice []Item
 
-func (w ItemSlice) Len() int { fmt.Println("worked in sorting"); return len(w) }
+func (w ItemSlice) Len() int {  return len(w) }
 func (w ItemSlice) Less(i, j int) bool {
 	a, _ := conv.Atoi(w[i].Category[:4])
 	b, _ := conv.Atoi(w[j].Category[:4])
@@ -269,7 +269,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Handle("/", http.HandlerFunc(handleMeGet)).Methods("GET")
-	r.Handle("/index", http.HandlerFunc(handleIndexGet)).Methods("GET")
+	r.Handle("/climateanalysis", http.HandlerFunc(handleIndexGet)).Methods("GET")
 	r.HandleFunc("/airTemperatureYear", cache.handleAirTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/dewTemperatureYear", cache.handleDewTemperatureAnnually).Methods("GET")
 	r.HandleFunc("/windSpeedYear", cache.handleDewTemperatureAnnually).Methods("GET")
@@ -371,7 +371,7 @@ func (c Cache) handleVisibilityAnnually(w http.ResponseWriter, req *http.Request
 		fmt.Printf("Len of annuals %d\n", len(annuals))
 		json.NewEncoder(w).Encode(annuals)
 	} else {
-		http.Redirect(w, req, "/", http.StatusSeeOther) //status code 303
+		http.Redirect(w, req, "/climateanalysis", http.StatusSeeOther) //status code 303
 	}
 
 }
@@ -379,7 +379,7 @@ func handleMeGet(w http.ResponseWriter, req *http.Request) {
 	templates.ExecuteTemplate(w, "me.html", nil)
 }
 func handleIndexGet(w http.ResponseWriter, req *http.Request) {
-	templates.ExecuteTemplate(w, "index.html", nil)
+	templates.ExecuteTemplate(w, "climateanalysis.html", nil)
 }
 func (s *Service) handleIndexPost(w http.ResponseWriter, req *http.Request) {
 
